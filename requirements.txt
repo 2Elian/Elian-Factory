@@ -1,0 +1,13 @@
+transformers>=4.31.0
+datasets>=2.12.0
+peft>=0.4.0
+bitsandbytes>=0.40.0
+accelerate>=0.20.0
+swanlab>=0.3.5
+loguru>=0.7.0
+pandas>=1.5.0
+numpy>=1.24.0
+sentencepiece>=0.1.99
+protobuf>=3.20.0
+modelscope>=1.9.5
+tqdm>=4.65.0 

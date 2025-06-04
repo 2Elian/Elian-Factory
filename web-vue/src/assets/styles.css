@@ -1,0 +1,340 @@
+/* 全局缩放 - 整体缩小20% */
+html {
+    transform: scale(0.8);
+    transform-origin: top left;
+    width: 125%; /* 1/0.8 = 1.25 或 125% */
+    height: 125%;
+    overflow-x: hidden;
+}
+
+/* 全局色彩变量 - 蓝白色调 */
+:root {
+    --primary-color: #0041F5;          /* 主色调：蓝色 */
+    --primary-dark: #0035CC;           /* 深蓝色 */
+    --primary-light: #3A6EFF;          /* 浅蓝色 */
+    --secondary-color: #2546b6;        /* 强调色：天蓝色 */
+    --text-dark: #2b2c34;              /* 主要文本：深灰色 */
+    --text-light: #FFFFFF;             /* 亮色文本：白色 */
+    --background-main: #FFFFFF;        /* 主背景：白色 */
+    --background-alt: #F5F7FA;         /* 次要背景：淡灰白色 */
+    --surface: #EBEEF2;                /* 表面色：浅灰色 */
+    --success: #0CAF60;                /* 成功色：绿色 */
+    --warning: #FFA41B;                /* 警告色：橙色 */
+    --danger: #FF3A5E;                 /* 危险色：红色 */
+    --border-radius: 10px;             /* 全局圆角 */
+    --shadow-sm: 0 2px 8px rgba(0, 65, 245, 0.08);  /* 小阴影 */
+    --shadow-md: 0 4px 12px rgba(0, 65, 245, 0.12); /* 中阴影 */
+    --shadow-lg: 0 8px 20px rgba(0, 65, 245, 0.15); /* 大阴影 */
+    --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); /* 平滑过渡 */
+}
+
+/* 全局样式 */
+body {
+    background-color: var(--background-alt);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: var(--text-dark);
+    line-height: 1.6;
+    letter-spacing: 0.2px;
+}
+
+/* 侧边栏样式 */
+.sidebar {
+    min-height: 100vh;
+    box-shadow: var(--shadow-lg);
+    background: linear-gradient(to bottom, #0041F5, #0035CC) !important;
+}
+
+.sidebar h3, .sidebar h5, .sidebar p {
+    color: var(--text-light) !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar .nav-link {
+    border-radius: var(--border-radius);
+    margin: 8px 0;
+    transition: var(--transition);
+    color: rgba(255, 255, 255, 0.8) !important;
+    font-weight: 500;
+    padding: 10px 15px;
+}
+
+.sidebar .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    transform: translateX(3px);
+    color: var(--text-light) !important;
+}
+
+.sidebar .nav-link.active {
+    background-color: var(--primary-color) !important;
+    color: var(--text-light) !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+/* 主内容区域 */
+.main-content {
+    padding: 20px 25px;
+}
+
+/* 卡片样式 */
+.card {
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 24px;
+    transition: var(--transition);
+    border: none;
+    background-color: var(--background-main);
+}
+
+.card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+}
+
+.card-header {
+    border-radius: var(--border-radius) var(--border-radius) 0 0 !important;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    padding: 15px 20px;
+    border-bottom: none;
+}
+
+.card-header.bg-primary {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark)) !important;
+}
+
+.card-header.bg-success {
+    background: linear-gradient(135deg, var(--success), #0A9551) !important;
+}
+
+.card-header.bg-info {
+    background: linear-gradient(135deg, #3A9BFF, #1F7AD8) !important;
+}
+
+.card-header.bg-secondary {
+    background: linear-gradient(135deg, #4D76FF, #0041F5) !important;
+}
+
+.card-header.bg-light {
+    background: var(--surface) !important;
+    color: var(--text-dark) !important;
+}
+
+.card-header.bg-dark {
+    background: linear-gradient(135deg, #2b2c34, #1d1e22) !important;
+}
+
+.card-body {
+    padding: 20px;
+}
+
+/* 表单样式 */
+.form-control, .form-select {
+    border-radius: calc(var(--border-radius) / 2);
+    padding: 12px 15px;
+    border: 1px solid #E2E8F0;
+    background-color: var(--background-main);
+    color: var(--text-dark);
+    transition: var(--transition);
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--primary-light);
+    box-shadow: 0 0 0 0.25rem rgba(0, 65, 245, 0.15);
+}
+
+.form-text {
+    color: #6E7A8A;
+}
+
+/* 按钮样式 */
+.btn {
+    border-radius: calc(var(--border-radius) / 2);
+    padding: 10px 18px;
+    transition: var(--transition);
+    font-weight: 500;
+    border: none;
+    letter-spacing: 0.3px;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    border: none;
+    box-shadow: 0 4px 10px rgba(0, 65, 245, 0.2);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, var(--primary-dark), #002DB3);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(0, 65, 245, 0.25);
+}
+
+.btn-outline-secondary {
+    border-color: #D9E0E8;
+    color: #6E7A8A;
+}
+
+.btn-outline-secondary:hover {
+    background-color: #F5F7FA;
+    color: var(--primary-color);
+}
+
+.btn-light {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: var(--text-light);
+    border: none;
+}
+
+.btn-light:hover {
+    background-color: rgba(255, 255, 255, 0.25);
+}
+
+/* GPU卡片样式 */
+.gpu-card {
+    border-left: 4px solid var(--success);
+    border-radius: var(--border-radius);
+    padding: 18px;
+    margin-bottom: 16px;
+    background-color: var(--background-main);
+    transition: var(--transition);
+    box-shadow: var(--shadow-sm);
+}
+
+.gpu-card:hover {
+    transform: translateX(3px);
+    box-shadow: var(--shadow-md);
+}
+
+.gpu-card .memory-bar {
+    height: 10px;
+    border-radius: 5px;
+    margin-top: 12px;
+    background-color: #eff0f6;
+}
+
+.gpu-card .badge.bg-success {
+    background-color: var(--success) !important;
+}
+
+/* 进度条 */
+.progress {
+    height: 12px;
+    border-radius: calc(var(--border-radius) / 2);
+    margin-top: 15px;
+    background-color: #eff0f6;
+    overflow: hidden;
+}
+
+.progress-bar {
+    background: linear-gradient(to right, var(--primary-color), var(--primary-light));
+}
+
+/* 表单分组 */
+.card-title {
+    color: var(--primary-color);
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    margin-bottom: 1.2rem;
+    position: relative;
+}
+
+/* 数据预览和日志样式 */
+.data-preview {
+    max-height: 200px;
+    overflow-y: auto;
+    background-color: var(--surface);
+    padding: 15px;
+    font-size: 0.9rem;
+    white-space: pre-wrap;
+    word-break: break-all;
+    border-radius: calc(var(--border-radius) / 2);
+    border: 1px solid #e2e2f5;
+}
+
+.training-logs {
+    max-height: 400px;
+    overflow-y: auto;
+    background-color: #2b2c34;
+    color: #e2e2f5;
+    padding: 15px;
+    font-size: 0.9rem;
+    font-family: 'Courier New', Courier, monospace;
+    white-space: pre-wrap;
+    word-break: break-all;
+    border-radius: calc(var(--border-radius) / 2);
+    border: 1px solid #3c3d47;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .sidebar {
+        min-height: auto;
+    }
+    
+    .card:hover {
+        transform: none;
+    }
+}
+
+/* Vue特定样式 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* 加载动画 */
+.loading-spinner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100px;
+}
+
+.spinner-border {
+  color: var(--primary-color) !important;
+}
+
+/* 表单验证 */
+.is-invalid {
+  border-color: var(--danger) !important;
+}
+
+.invalid-feedback {
+  display: block;
+  color: var(--danger);
+}
+
+/* 开关样式 */
+.form-check-input:checked {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+/* 切换效果 */
+.form-check-input {
+  transition: var(--transition);
+}
+
+/* 自定义滚动条 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: #f1f1f1;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #c5c5d6;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #9d9db1;
+} 
