@@ -1,0 +1,2 @@
+# Elian-Factory
+本项目开发了一款可以在Windows系统上进行大模型微调训练的工具，微调推理框架基于transformers库进行开发。
