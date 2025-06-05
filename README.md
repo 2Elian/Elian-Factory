@@ -15,9 +15,7 @@
 
 ## 演示视频
 
-<video width="600" controls>
-  <source src="https://github.com/2Elian/Elian-Factory/img/video.mp4" type="video/mp4">
-</video>
+![演示地址](/img/video.gif)
 
 ## 快速开始构建项目
 
