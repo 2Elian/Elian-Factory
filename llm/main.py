@@ -18,6 +18,10 @@ import os
 from models.transformers_model import load_model
 from mydataloader.loader_transformers import process_data
 from combin_weight import merge_lora_to_base_model
+import warnings
+warnings.simplefilter("ignore")
+warnings.filterwarnings("ignore", category=FutureWarning)
+warnings.filterwarnings("ignore", category=UserWarning)
 
 def configuration_parameter():
     parser = argparse.ArgumentParser(description="LoRA fine-tuning for deepseek-r1 model @Elian")
@@ -124,7 +128,9 @@ def main():
         os.environ["TORCH_DISTRIBUTED_BACKEND"] = "gloo"
         os.environ["MASTER_ADDR"] = "127.0.0.1"
         os.environ["MASTER_PORT"] = "29500"
-    print("开始训练，参数如下:")
+    if not os.path.exists(args.output_dir):
+        os.makedirs(args.output_dir)
+    print("🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟Elian-Factory开始训练，训练配置参数如下:🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟")
     for key, value in vars(args).items():
         print(f"  {key}: {value}")
     print("🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟加载分词器@Elian🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟")
@@ -151,7 +157,7 @@ def main():
     final_save_path = join(args.output_dir)
     trainer.save_model(final_save_path)
     combin_sava_path = os.path.join(args.output_dir, 'weight')
-    print(f"🌟🌟训练完毕!开始合并权重文件到{combin_sava_path}@Elian")
+    print(f"🌟🌟训练完毕!开始合并权重文件到{combin_sava_path}...@Elian")
     merge_lora_to_base_model(args.model_name_or_path, args.output_dir, combin_sava_path)
 
 if __name__ == "__main__":

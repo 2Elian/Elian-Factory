@@ -1117,26 +1117,6 @@ std::string handle_api_request(const std::string& url, const std::string& reques
                 
                 // 创建输出目录
                 std::string output_dir = output_path;
-                if (!file_exists(output_dir)) {
-                    std::cout << "创建输出目录: " << output_dir << std::endl;
-                    // 递归创建目录
-                    std::string path_so_far;
-                    std::istringstream path_stream(output_dir);
-                    std::string folder;
-                    while (std::getline(path_stream, folder, '\\')) {
-                        if (path_so_far.empty()) {
-                            path_so_far = folder;
-                        } else {
-                            path_so_far += "\\" + folder;
-                        }
-                        if (!path_so_far.empty() && !file_exists(path_so_far)) {
-                            if (!CreateDirectoryA(path_so_far.c_str(), NULL) && GetLastError() != ERROR_ALREADY_EXISTS) {
-                                error_message = "无法创建输出目录: " + path_so_far + ", 错误码: " + std::to_string(GetLastError());
-                                break;
-                            }
-                        }
-                    }
-                }
                 #else
                 output_path = current_dir + "/llm/" + output_path;
                 #endif

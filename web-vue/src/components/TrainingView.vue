@@ -185,7 +185,6 @@
                     v-model="formData.lr_scheduler_type"
                     required
                   >
-                    <option value="constant_with_warmup">常数预热</option>
                     <option value="linear">线性衰减</option>
                     <option value="cosine">余弦衰减</option>
                     <option value="polynomial">多项式衰减</option>

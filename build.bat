@@ -13,6 +13,8 @@ cd /d "%~dp0web-vue" || (
     exit /b 1
 )
 
+call npm.cmd install
+
 call npm.cmd run build
 if %errorlevel% neq 0 (
     echo 前端构建失败！

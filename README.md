@@ -1,8 +1,11 @@
 # ElianFactory: 在Windows系统上微调大语言模型变得容易
+\[ 中文 | [English](README_en.md) \]
+
 本项目开发了一款可以在Windows系统上进行大模型微调训练的工具，微调推理框架基于transformers库进行开发。
 
 如果您是一名LLM工程师，您可以自行构建您的微调推理代码。
-如果您熟悉Docker与Linux虚拟机的安装与操作您可以选择[LlamaFactory](https://www.markdownguide.org)进行LLM微调与推理。但如果您是一名小白，且仅有Windows操作系统，ElianFactory是您的最佳选择。
+如果您熟悉Docker与Linux虚拟机的安装与操作您可以选择[LlamaFactory](https://www.markdownguide.org)进行LLM微调与推理。但如果您是一名小白，且仅有Windows操作系统，[ElianFactory](https://github.com/2Elian/Elian-Factory)是您的最佳选择。
+
 
 ## ElianFactory的优势
 
@@ -12,25 +15,21 @@
 
 ## 演示视频
 
+<video width="600" controls>
+  <source src="https://github.com/2Elian/Elian-Factory/img/video.mp4" type="video/mp4">
+</video>
+
 ## 快速开始构建项目
-
-### 环境要求
-
-- Windows 10/11
-- NVIDIA GPU (支持CUDA)
-- C++编译器 (Visual Studio 2019+ 或 MinGW-w64)
-- Python 3.10 (用于实际训练)
-- Node.js 14+ (用于Vue.js前端开发)
 
 ### 安装步骤
 
 1. 克隆仓库：
    ```bash
-   git clone https://github.com/yourusername/llm-trainer.git
-   cd llm-trainer
+   git clone https://github.com/2Elian/Elian-Factory.git
+   cd Elian-Factory
    ```
 
-2. 安装Python依赖：(*[Anaconda安装教程](https://www.markdownguide.org)*)
+2. 安装Python依赖：
     ```bash
     conda create -n elianfactory python=3.10
     conda activate elianfactory
@@ -40,11 +39,11 @@
     pip install -r requirements.txt
     ```
 
-3. 安装node和C++：
+3. 安装node和g++：
 
-   *[nodejs安装教程](https://www.markdownguide.org)*
+   *[node安装教程](node_down.md)*
 
-   *[C++安装教程](https://www.markdownguide.org)*
+   *[g++安装教程](g_down.md)*
 
 4. 构建项目：
    ```bash
@@ -65,9 +64,77 @@
 
 ## 使用教程
 
+### 模型下载
+   您可以在huggingface或modelscope上下载您需要微调的大模型，本项目以deepseek-r1:1.5b为例，进行讲解：
+   1. 启动cmd
+      ```bash
+      cd Elian-Factory
+      cd llm
+      conda activate elianfactory
+      mkdir ./ckpt/deepseek1.5
+      ```
+   2. 下载模型
+      ```bash
+      # huggingface 命令
+      huggingface-cli download deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B --local-dir ./ckpt/deepseek1.5
+
+      # modelscope命令
+      modelscope-cli download deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B --local_dir ./ckpt/deepseek1.5
+      ```
+   3. 在ElianFactory中选择模型
+   
+      将前端页面的模型路径更换为：/ckpt/deepseek1.5
+
+### 更换数据集
+
+   本项目的数据集均为格式如下：
+   ```bash
+   {"conversation": [{"human": "这里是问题", "assistant": "这里是答案"}]}
+
+   {"conversation": [{"human": "机器学习是什么？", "assistant": "机器学习是人工智能的一个分支，它使计算机系统能够通过经验自动改进。具体来说，机器学习算法通过使用计算方法从数据中学习信息，而无需明确编程。机器学习模型通常分为监督学习、无监督学习和强化学习等类型。"}]}
+   ```
+
+   您可以根据以上格式构建您自己的数据集(注意：数据集后缀名应为jsonl)，并将构建好的数据集存入到Elian-Factory/llm/data目录下。
+
+
+### 调整超参数
+
+   Elian-Factory可供您选择的参数如下：
+   - 模型路径：存放需要微调LLM的路径
+   - 输出目录： 您需要将微调模型的权重放置到哪个目录下
+   - 训练数据文件： 您可以在页面中进行选择您所需要训练的数据集
+   - 最大序列长度： 模型期待输出的最大token数
+   - 训练轮数： 模型需要迭代多少轮
+   - 批次大小： 一次送多少样本给模型学习
+   - 梯度累积步数： 增大这个参数，相当于增大了批次大小
+   - 学习率： 建议选择的范围为0.001-0.000001
+   - 学习率调度器： 可供您选择的有[线性衰减、余弦衰减、多项式衰减]
+   - 预热步数： 该参数的值建议为总步长的0.5%-1%，总步长=训练数据集长度 / 总批次大小 * 训练轮数
+   - LoRA秩 (r)：建议其值为[8,16,32,64]，值越大模型学习的越好，但显存会随之增加。
+   - LoRA Alpha： 建议其值为r的二倍
+   - LoRA Dropout：建议为默认值
+   - 日志记录步数： 多少个步长打印一次损失
+   - 保存检查点步数： 多少个步长保存一次模型权重
+   - 最大保存检查点数： 最多保留多少个训练检查点（checkpoint），超出数量后旧的会被自动删除。
+   - 优化器： 默认为AdamW
+   - 训练模式： 可选[LORA, QLORA]
+   - 随机种子： 默认为42
+   - FP16训练： 默认使用bf16训练
+   - 梯度检查点： 可以节省内存占用
+   - 分布式训练： 多卡训练环境（基于DDP）
 
 ## ElianFactory支持的模型
 
+理论上Elian-Factory支持任意LLM的微调，但我们仅仅对以下模型进行了测试，如果您在微调其他模型过程中出现任何问题，请留言您的问题。
+
+<div align="center">
+
+| **厂家** | **支持模型** |
+| :------------: | :------------: |
+| DeepSeek | DeepSeek-R1:1.5b、DeepSeek-R1:8b、DeepSeek-R1:14b |
+| Qwen   | Qwen3、Qwen2.5、QwQ |
+
+</div>
 
 ## 开发者信息
 
@@ -80,8 +147,3 @@
 - V1.0.1
    
    增添数据生成功能、微调模型集成到Ollama
-
-
-## 许可证
-
-MIT License
