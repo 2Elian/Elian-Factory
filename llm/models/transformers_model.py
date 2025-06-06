@@ -58,7 +58,7 @@ def load_model(args, train_dataset, data_collator):
         "trust_remote_code": True,
         "torch_dtype": torch.float16 if args.fp16 else torch.bfloat16,
         "use_cache": False if args.gradient_checkpointing else True,
-        "device_map": "auto" if not args.distributed else None,
+        "device_map": "cuda:0" if not args.distributed else None,
         "load_in_4bit": True
     }
     model = AutoModelForCausalLM.from_pretrained(args.model_name_or_path, **model_kwargs)

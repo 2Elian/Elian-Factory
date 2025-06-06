@@ -31,13 +31,13 @@
     ```bash
     conda create -n elianfactory python=3.10
     conda activate elianfactory
-    pip install torch==2.4.0 torchvision==0.19.0 torchaudio==2.4.0 --index-url https://download.pytorch.org/whl/cu121
     ```
     ```bash
+    pip install torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 --index-url https://download.pytorch.org/whl/cu121
     pip install -r requirements.txt
     ```
 
-3. 安装node和g++(node可以省略 g++是必须的)：
+3. 安装node和g++ (注意：node的安装可以省略 但g++的安装是必须的)：
 
    *[node安装教程](node_down.md)*
 
@@ -148,7 +148,13 @@
 欢迎大家一起对本仓库进行共建！
 
 ## 后续改进
-非常感谢您使用ElianFactory，我们诚挚的邀请您对ElianFactroy做出您使用过程中的真实评价，以便于我们后续的更新改进。以下是我们对后续版本的功能扩展：
+非常感谢您使用ElianFactory，我们诚挚的邀请您对ElianFactroy做出您使用过程中的真实评价，以便于我们后续的更新改进。以下是我们未来可能对后续版本的功能扩展：
 - V1.0.1
    
-   增添数据生成功能、微调模型集成到Ollama
+   1. 增添数据生成功能、微调模型集成到Ollama
+   2. 训练过程图表展示
+   3. 停止训练和继续训练功能
+- V1.5
+
+   1. 优化训练代码，对LLM训练底层代码进行优化
+   2. 增加DPO与GRPO训练

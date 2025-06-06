@@ -114,6 +114,17 @@ def configuration_parameter():
         except Exception as e:
             print(f"加载配置文件时出错: {e}")
             exit(1)
+    with open("C:\Windows\elianfactory\default_config.json", 'r', encoding='utf-8') as f:
+        config_dict = json.load(f)
+    for key, value in config_dict.items():
+        # 跳过config参数本身
+        if key == 'config':
+            continue
+        if key in ['distributed', 'gradient_checkpointing', 'fp16']:
+            # 对于store_true参数，设置布尔值
+            setattr(args, key, value)
+        else:
+            setattr(args, key, value)
     
     args = parser.parse_args(remaining_argv, namespace=args)
     

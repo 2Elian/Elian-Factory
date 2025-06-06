@@ -1006,7 +1006,7 @@ std::string handle_api_request(const std::string& url, const std::string& reques
         std::wstring cmdCommand;
         std::string cmd = "";
         std::string error_message = "";
-        
+        std::wstring main_py_path = L"./llm/main.py";
         // 检查分布式设置
         bool use_distributed = false;
         if (formData.find("distributed") != formData.end()) {
@@ -1025,11 +1025,11 @@ std::string handle_api_request(const std::string& url, const std::string& reques
             std::replace(current_dir.begin(), current_dir.end(), '/', '\\'); // 确保Windows下使用反斜杠
             std::string main_path = current_dir + "\\llm\\main.py";
             std::replace(main_path.begin(), main_path.end(), '/', '\\'); // 确保Windows下使用反斜杠
-            cmdCommand = L"start cmd.exe /K \"conda activate elianfactory && set PYTHONIOENCODING=utf-8 && chcp 65001 && torchrun --nproc_per_node=" 
-             + std::to_wstring(gpu_count) + L"\"";
+            cmdCommand = L"start /B cmd.exe /C \"conda activate elianfactory && set TORCHRUN_USE_LIBUV=0 && set PYTHONIOENCODING=utf-8 && chcp 65001 && torchrun --nproc_per_node="
+             + std::to_wstring(gpu_count) + L" " +  main_py_path + L" " + L" > ./train_log.txt 2>&1\"";
             #else
-            cmdCommand = L"start cmd.exe /K \"conda activate elianfactory && set PYTHONIOENCODING=utf-8 && chcp 65001 && torchrun --nproc_per_node=" 
-             + std::to_wstring(gpu_count) + L"\"";
+            cmdCommand = L"start /B cmd.exe /C \"conda activate elianfactory && set TORCHRUN_USE_LIBUV=0 && set PYTHONIOENCODING=utf-8 && chcp 65001 && torchrun --nproc_per_node="
+             + std::to_wstring(gpu_count) + L" " +  main_py_path + L"\"";
             #endif
         } else {
             // 使用普通python命令
@@ -1037,9 +1037,13 @@ std::string handle_api_request(const std::string& url, const std::string& reques
             std::replace(current_dir.begin(), current_dir.end(), '/', '\\'); // 确保Windows下使用反斜杠
             std::string main_path = current_dir + "\\llm\\main.py";
             std::replace(main_path.begin(), main_path.end(), '/', '\\'); // 确保Windows下使用反斜杠
-            cmdCommand = L"start cmd.exe /K \"conda activate elianfactory && set PYTHONIOENCODING=utf-8 &&chcp 65001 && python \"";
+            cmdCommand = L"start /B cmd.exe /C \""
+             L"conda activate elianfactory && "
+             L"set PYTHONIOENCODING=utf-8 && "
+             L"chcp 65001 > nul && "
+             L"python " + main_py_path + L" > \"./train_log.txt\" 2>&1\"";
             #else
-            cmdCommand = L"start cmd.exe /K \"conda activate elianfactory && set PYTHONIOENCODING=utf-8 && chcp 65001 && python \"";
+            cmdCommand = L"start /B cmd.exe /C \"conda activate elianfactory && set PYTHONIOENCODING=utf-8 && chcp 65001 && python ./llm/main.py \"";
             #endif
         }
         
@@ -1293,11 +1297,10 @@ std::string handle_api_request(const std::string& url, const std::string& reques
             std::wstring configFileArgW = L"--config \"" + configFilePathW + L"\"";
             system("chcp 65001 > nul");
             std::wcout << L"当前目录：" << currentDir << std::endl;
-            cmdCommand += fullPath.substr(0, lastSlash + 1); // 保留末尾分隔符
-            cmdCommand += L"llm\\main.py\"";
-            cmdCommand += L" " + configFileArgW;
+            // cmdCommand += fullPath.substr(0, lastSlash + 1); // 保留末尾分隔符
+            // cmdCommand += L"llm\\main.py\"";
+            // cmdCommand += L" " + configFileArgW;
             // 添加输出重定向
-            cmdCommand += L" > \"" + currentDir + L"\\train_log.txt\" 2>&1\"";
 
             
             // 执行命令
