@@ -167,9 +167,13 @@ def main():
     # 训练
     final_save_path = join(args.output_dir)
     trainer.save_model(final_save_path)
-    combin_sava_path = os.path.join(args.output_dir, 'weight')
-    print(f"🌟🌟训练完毕!开始合并权重文件到{combin_sava_path}...@Elian")
-    merge_lora_to_base_model(args.model_name_or_path, args.output_dir, combin_sava_path)
+    if int(os.environ.get("LOCAL_RANK", "0")) == 0:
+        combin_sava_path = os.path.join(args.output_dir, 'weight')
+        print(f"🌟🌟训练完毕!开始合并权重文件到{combin_sava_path}...@Elian")
+        merge_lora_to_base_model(args.model_name_or_path, args.output_dir, combin_sava_path)
+    if args.distributed:
+        import torch.distributed as dist
+        dist.barrier()
 
 if __name__ == "__main__":
     main()

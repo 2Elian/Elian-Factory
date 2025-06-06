@@ -10,6 +10,7 @@ import torch
 import os
 from modelscope import AutoTokenizer
 import shutil
+import gc
 
 def copy_files_not_in_B(A_path, B_path):
     """
@@ -46,29 +47,70 @@ def copy_files_not_in_B(A_path, B_path):
             shutil.copy2(src_path, dst_path)
 
 def merge_lora_to_base_model(model_name_or_path, adapter_name_or_path, save_path):
-
-    # 如果文件夹不存在，就创建
-    if not os.path.exists(save_path):
-        os.makedirs(save_path)
-    tokenizer = AutoTokenizer.from_pretrained(model_name_or_path,trust_remote_code=True,)
-
-    model = AutoModelForCausalLM.from_pretrained(
-        model_name_or_path,
-        trust_remote_code=True,
-        low_cpu_mem_usage=True,
-        torch_dtype=torch.float16,
-        device_map="auto"
-    )
-    # 加载保存的 Adapter
-    model = PeftModel.from_pretrained(model, adapter_name_or_path, device_map="auto",trust_remote_code=True)
-    # 将 Adapter 合并到基础模型中
-    merged_model = model.merge_and_unload()  # PEFT 的方法将 Adapter 权重合并到基础模型
-    # 保存合并后的模型
-    tokenizer.save_pretrained(save_path)
-    merged_model.save_pretrained(save_path, safe_serialization=False)
-    copy_files_not_in_B(model_name_or_path, save_path)
-    print("合并完毕!@Elian")
+    # 清空GPU缓存
+    torch.cuda.empty_cache()
+    gc.collect()
+    
+    try:
+        # 如果文件夹不存在，就创建
+        if not os.path.exists(save_path):
+            os.makedirs(save_path)
+            
+        # 确保使用CPU加载模型以节省显存
+        tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, trust_remote_code=True)
+        
+        print("⏳ 开始加载基础模型...")
+        model = AutoModelForCausalLM.from_pretrained(
+            model_name_or_path,
+            trust_remote_code=True,
+            low_cpu_mem_usage=True,
+            torch_dtype=torch.float16,
+            device_map="auto"  # 自动选择可用设备
+        )
+        
+        print("⏳ 加载适配器权重...")
+        model = PeftModel.from_pretrained(model, adapter_name_or_path, device_map="auto")
+        
+        print("⏳ 合并权重中...")
+        merged_model = model.merge_and_unload()
+        
+        print("⏳ 保存合并后模型...")
+        tokenizer.save_pretrained(save_path)
+        merged_model.save_pretrained(save_path, safe_serialization=True)  # 使用安全序列化
+        
+        copy_files_not_in_B(model_name_or_path, save_path)
+        print("✅ 合并完毕!@Elian")
+        
+    except Exception as e:
+        print(f"❌ 合并过程中出错: {str(e)}")
+        # 尝试使用CPU回退
+        try:
+            print("🔄 尝试使用CPU回退方案...")
+            model = AutoModelForCausalLM.from_pretrained(
+                model_name_or_path,
+                trust_remote_code=True,
+                low_cpu_mem_usage=True,
+                torch_dtype=torch.float16,
+                device_map="cpu"
+            )
+            model = PeftModel.from_pretrained(model, adapter_name_or_path, device_map="cpu")
+            merged_model = model.merge_and_unload()
+            tokenizer.save_pretrained(save_path)
+            merged_model.save_pretrained(save_path, safe_serialization=True)
+            copy_files_not_in_B(model_name_or_path, save_path)
+            print("✅ CPU回退方案合并成功!@Elian")
+        except Exception as cpu_e:
+            print(f"❌ CPU回退方案失败: {str(cpu_e)}")
+    finally:
+        # 最终清理
+        del model
+        del merged_model
+        torch.cuda.empty_cache()
+        gc.collect()
 
 if __name__ == '__main__':
-    merge_lora_to_base_model()
+    model_name_or_path = "./ckpt/deepseek14"
+    adapter_name_or_path = "E:\lottery\Elian-Factory-main\llm\output\your_t123ask\lora"
+    save_path = "E:\lottery\Elian-Factory-main\llm\output\your_t123ask\lora\weight"
+    merge_lora_to_base_model(model_name_or_path,adapter_name_or_path,save_path)
 
