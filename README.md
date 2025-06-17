@@ -37,31 +37,20 @@
     pip install -r requirements.txt
     ```
 
-3. 安装node和g++ (注意：node的安装可以省略 但g++的安装是必须的)：
+3. 安装node和g++ (注意：node和g++的安装可以省略，如您需在此项目上进行二开，您可以按如下要求安装。)：
 
    *[node安装教程](node_down.md)*
 
    *[g++安装教程](g_down.md)*
 
-4. 构建项目：
-   ```bash
-   cd Elian-Factory
-   ./build.bat
-   ```
 
-   如果运行上述bat脚本出现报错，请按照下面的方法进行操作：
-   ```bash
-   cd Elian-Factory
-   g++ llm_trainer_server.cpp -o llm_trainer_server.exe -std=c++17 -lws2_32
-   ```
-
-5. 启动服务器：
+4. 启动服务器：
    ```bash
    # 最好是右键点击以管理员身份运行
    ./llm_trainer_server.exe
    ```
 
-6. 在浏览器中访问：
+5. 在浏览器中访问：
    ```
    http://localhost:10171
    ```
