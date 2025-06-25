@@ -15,6 +15,8 @@
 #include <locale>
 #include <codecvt>
 #include <iomanip>
+#include <thread>
+#include <chrono>
 
 #ifdef _WIN32
 #include <winsock2.h>
@@ -239,7 +241,7 @@ std::vector<GPUInfo> detect_gpus() {
             }
         }
 #else
-        // Linux检测代码 - 简单模拟
+        // Linux检测代码
         if (system("command -v nvidia-smi >/dev/null 2>&1") == 0) {
             std::string simple_output = exec_command("nvidia-smi -L");
             std::regex gpu_pattern("GPU (\\d+): (.+?)(?:\\(UUID:.+?\\))?$");
@@ -1877,6 +1879,429 @@ std::string handle_api_request(const std::string& url, const std::string& reques
         
         json << "}";
         return json_response(json.str());
+    }
+    else if (url == "/api/inference" && method == "POST") {
+        // 读取POST数据体
+        std::string request_body = extract_post_data(request);
+        std::cout << "收到推理请求：" << request_body << std::endl;
+        
+        // 解析JSON配置
+        std::map<std::string, std::string> inferenceData = parse_json(request_body);
+        
+        // 获取参数
+        std::string model_path = inferenceData["model_path"];
+        std::string prompt = inferenceData["prompt"];
+        std::string max_new_tokens = inferenceData["max_new_tokens"];
+        
+        // 参数验证
+        if (model_path.empty() || prompt.empty()) {
+            std::ostringstream json;
+            json << "{\"success\":false,\"message\":\"缺少必要参数\"}";
+            return json_response(json.str());
+        }
+        
+        // 如果max_new_tokens为空，设置默认值
+        if (max_new_tokens.empty()) {
+            max_new_tokens = "2048";
+        }
+        
+        // 获取当前工作目录
+        std::string current_dir;
+#ifdef _WIN32
+        wchar_t wbuffer[MAX_PATH];
+        GetCurrentDirectoryW(MAX_PATH, wbuffer);
+        
+        // 将宽字符转换为UTF-8编码的字符串
+        int size_needed = WideCharToMultiByte(CP_UTF8, 0, wbuffer, -1, NULL, 0, NULL, NULL);
+        std::vector<char> utf8_buffer(size_needed);
+        WideCharToMultiByte(CP_UTF8, 0, wbuffer, -1, utf8_buffer.data(), size_needed, NULL, NULL);
+        
+        current_dir = std::string(utf8_buffer.data());
+        
+        // 替换Windows路径中的反斜杠为正斜杠（统一处理）
+        for (char &c : current_dir) {
+            if (c == '\\') c = '/';
+        }
+#else
+        char buffer[PATH_MAX];
+        if (getcwd(buffer, PATH_MAX) != NULL) {
+            current_dir = buffer;
+        } else {
+            current_dir = ".";
+        }
+#endif
+
+        // 处理模型路径：如果是相对路径，添加基础目录
+        if (model_path.size() > 0 && model_path[0] == '.') {
+            model_path = current_dir + "/llm" + model_path.substr(1);
+        } else if (model_path.size() > 0 && model_path[0] == '/') {
+            model_path = current_dir + "/llm" + model_path;
+        } else if (model_path.size() > 0 && model_path[0] != '/' && model_path[1] != ':') {
+            model_path = current_dir + "/llm/" + model_path;
+        }
+        
+        // 转义引号和反斜杠，以便在命令行中使用
+        std::string escaped_prompt = prompt;
+        for (size_t i = 0; i < escaped_prompt.length(); ++i) {
+            if (escaped_prompt[i] == '"') {
+                escaped_prompt.replace(i, 1, "\\\"");
+                ++i;
+            } else if (escaped_prompt[i] == '\\') {
+                escaped_prompt.replace(i, 1, "\\\\");
+                ++i;
+            }
+        }
+        
+        // 构建临时文件路径用于存储输出
+        std::string output_file = current_dir + "/inference_result_" + std::to_string(std::time(nullptr)) + ".txt";
+        
+        // 构建Python命令
+        std::string cmd;
+#ifdef _WIN32
+        std::string inference_script = current_dir + "/llm/inference.py";
+        std::replace(inference_script.begin(), inference_script.end(), '/', '\\');
+        std::replace(model_path.begin(), model_path.end(), '/', '\\');
+        std::replace(output_file.begin(), output_file.end(), '/', '\\');
+        
+        cmd = "start /B cmd.exe /C \"conda activate elianfactory && "
+              "set PYTHONIOENCODING=utf-8 && "
+              "chcp 65001 > nul && "
+              "python -c \"import sys; sys.path.append('" + current_dir + "\\\\llm'); "
+              "from inference import model_reasoning; "
+              "result = model_reasoning('" + model_path + "', '" + escaped_prompt + "', " + max_new_tokens + "); "
+              "with open('" + output_file + "', 'w', encoding='utf-8') as f: f.write(result)\" > nul 2>&1\"";
+#else
+        std::string inference_script = current_dir + "/llm/inference.py";
+        cmd = "conda activate elianfactory && "
+              "python -c \"import sys; sys.path.append('" + current_dir + "/llm'); "
+              "from inference import model_reasoning; "
+              "result = model_reasoning('" + model_path + "', '" + escaped_prompt + "', " + max_new_tokens + "); "
+              "with open('" + output_file + "', 'w', encoding='utf-8') as f: f.write(result)\" > /dev/null 2>&1";
+#endif
+        
+        std::cout << "执行命令: " << cmd << std::endl;
+        
+        // 执行命令
+        int ret = std::system(cmd.c_str());
+        if (ret != 0) {
+            std::ostringstream json;
+            json << "{\"success\":false,\"message\":\"推理命令执行失败\",\"error\":\"" << ret << "\"}";
+            return json_response(json.str());
+        }
+        
+        // 等待一段时间，确保推理过程开始
+        std::this_thread::sleep_for(std::chrono::seconds(2));
+        
+        // 构建轮询响应
+        std::ostringstream json;
+        json << "{";
+        json << "\"success\":true,";
+        json << "\"message\":\"推理请求已提交\",";
+        json << "\"output_file\":\"" << escape_json(output_file) << "\"";
+        json << "}";
+        
+        return json_response(json.str());
+    }
+    else if (url.find("/api/inference/result?file=") == 0) {
+        // 获取输出文件路径
+        std::string file_param = url.substr(url.find("=") + 1);
+        std::string output_file;
+        
+        // 进行URL解码
+        for (size_t i = 0; i < file_param.length(); ++i) {
+            if (file_param[i] == '%' && i + 2 < file_param.length()) {
+                int value = 0;
+                if (sscanf(file_param.substr(i + 1, 2).c_str(), "%x", &value) == 1) {
+                    output_file += static_cast<char>(value);
+                    i += 2;
+                } else {
+                    output_file += file_param[i];
+                }
+            } else if (file_param[i] == '+') {
+                output_file += ' ';
+            } else {
+                output_file += file_param[i];
+            }
+        }
+        
+        // 安全检查，防止路径遍历攻击
+        if (output_file.find("..") != std::string::npos) {
+            std::ostringstream json;
+            json << "{\"success\":false,\"message\":\"无效的文件路径\"}";
+            return json_response(json.str());
+        }
+        
+        // 检查文件是否存在
+        if (!file_exists(output_file)) {
+            std::ostringstream json;
+            json << "{\"success\":false,\"message\":\"推理结果尚未生成，请稍后再试\"}";
+            return json_response(json.str());
+        }
+        
+        // 读取推理结果
+        std::string result;
+        try {
+            std::ifstream file(output_file);
+            if (file) {
+                std::stringstream buffer;
+                buffer << file.rdbuf();
+                result = buffer.str();
+                file.close();
+                
+                // 删除临时文件
+                std::remove(output_file.c_str());
+            } else {
+                std::ostringstream json;
+                json << "{\"success\":false,\"message\":\"无法读取推理结果\"}";
+                return json_response(json.str());
+            }
+        } catch (const std::exception& e) {
+            std::ostringstream json;
+            json << "{\"success\":false,\"message\":\"读取推理结果时出错\",\"error\":\"" << escape_json(e.what()) << "\"}";
+            return json_response(json.str());
+        }
+        
+        // 返回推理结果
+        std::ostringstream json;
+        json << "{";
+        json << "\"success\":true,";
+        json << "\"result\":\"" << escape_json(result) << "\"";
+        json << "}";
+        
+        return json_response(json.str());
+    }
+    else if (url == "/api/ollama/deploy" && method == "POST") {
+        // 读取POST数据体
+        std::string request_body = extract_post_data(request);
+        std::cout << "收到Ollama部署请求：" << request_body << std::endl;
+        
+        // 解析JSON配置
+        std::map<std::string, std::string> deployData = parse_json(request_body);
+        
+        // 获取参数
+        std::string model_path = deployData["model_path"];
+        std::string model_name = deployData["model_name"];
+        
+        // 参数验证
+        if (model_path.empty() || model_name.empty()) {
+            std::ostringstream json;
+            json << "{\"success\":false,\"message\":\"缺少必要参数\"}";
+            return json_response(json.str());
+        }
+        
+        // 验证模型名称格式
+        std::regex model_name_regex("^[a-zA-Z0-9_-]+$");
+        if (!std::regex_match(model_name, model_name_regex)) {
+            std::ostringstream json;
+            json << "{\"success\":false,\"message\":\"模型名称只能包含字母、数字、连字符和下划线\"}";
+            return json_response(json.str());
+        }
+        
+        // 获取当前工作目录
+        std::string current_dir;
+#ifdef _WIN32
+        wchar_t wbuffer[MAX_PATH];
+        GetCurrentDirectoryW(MAX_PATH, wbuffer);
+        
+        // 将宽字符转换为UTF-8编码的字符串
+        int size_needed = WideCharToMultiByte(CP_UTF8, 0, wbuffer, -1, NULL, 0, NULL, NULL);
+        std::vector<char> utf8_buffer(size_needed);
+        WideCharToMultiByte(CP_UTF8, 0, wbuffer, -1, utf8_buffer.data(), size_needed, NULL, NULL);
+        
+        current_dir = std::string(utf8_buffer.data());
+        
+        // 替换Windows路径中的反斜杠为正斜杠（统一处理）
+        for (char &c : current_dir) {
+            if (c == '\\') c = '/';
+        }
+#else
+        char buffer[PATH_MAX];
+        if (getcwd(buffer, PATH_MAX) != NULL) {
+            current_dir = buffer;
+        } else {
+            current_dir = ".";
+        }
+#endif
+
+        // 处理模型路径：如果是相对路径，添加基础目录
+        if (model_path.size() > 0 && model_path[0] == '.') {
+            model_path = current_dir + "/llm" + model_path.substr(1);
+        } else if (model_path.size() > 0 && model_path[0] == '/') {
+            model_path = current_dir + "/llm" + model_path;
+        } else if (model_path.size() > 0 && model_path[0] != '/' && model_path[1] != ':') {
+            model_path = current_dir + "/llm/" + model_path;
+        }
+        
+        // 检查模型路径是否存在
+        if (!file_exists(model_path)) {
+            std::ostringstream json;
+            json << "{\"success\":false,\"message\":\"模型路径不存在: " << escape_json(model_path) << "\"}";
+            return json_response(json.str());
+        }
+        
+        // 创建Modelfile
+        std::string modelfile_path = model_path + "/Modelfile";
+        // 定义Modelfile内容
+        std::string modelfile_content = "# ollama modelfile auto-generated by llamafactory\n\n"
+                                       "FROM .\n\n"
+                                       "TEMPLATE \"\"\"<|begin_of_sentence|>{{ if .System }}{{ .System }}{{ end }}{{ range .Messages }}{{ if eq .Role \"user\" }}<|User|>{{ .Content }}<|Assistant|>{{ else if eq .Role \"assistant\" }}{{ .Content }}<|end_of_sentence|>{{ end }}{{ end }}\"\"\"\n\n"
+                                       "PARAMETER stop \"<|end_of_sentence|>\"\n"
+                                       "PARAMETER num_ctx 4096";
+        
+        try {
+            // 创建Modelfile
+            std::ofstream modelfile(modelfile_path);
+            if (!modelfile.is_open()) {
+                std::ostringstream json;
+                json << "{\"success\":false,\"message\":\"无法创建Modelfile: " << escape_json(modelfile_path) << "\"}";
+                return json_response(json.str());
+            }
+            
+            modelfile << modelfile_content;
+            modelfile.close();
+            
+            // 生成任务ID
+            std::string task_id = "ollama_" + std::to_string(std::time(nullptr)) + "_" + std::to_string(std::rand() % 1000);
+            std::string status_file = current_dir + "/ollama_status_" + task_id + ".txt";
+            
+            // 构建Ollama命令
+            std::string cmd;
+#ifdef _WIN32
+            std::string windows_model_path = model_path;
+            std::replace(windows_model_path.begin(), windows_model_path.end(), '/', '\\');
+            
+            cmd = "start /B cmd.exe /C \"cd " + windows_model_path + " && "
+                  "ollama create " + model_name + " -f ./Modelfile > \"" + status_file + "\" 2>&1 && "
+                  "echo SUCCESS >> \"" + status_file + "\" || echo FAILED >> \"" + status_file + "\"\"";
+#else
+            cmd = "cd " + model_path + " && "
+                  "ollama create " + model_name + " -f ./Modelfile > \"" + status_file + "\" 2>&1 && "
+                  "echo SUCCESS >> \"" + status_file + "\" || echo FAILED >> \"" + status_file + "\" &";
+#endif
+            
+            std::cout << "执行命令: " << cmd << std::endl;
+            
+            // 执行命令
+            int ret = std::system(cmd.c_str());
+            if (ret != 0) {
+                std::ostringstream json;
+                json << "{\"success\":false,\"message\":\"启动Ollama命令失败，错误码: " << ret << "\"}";
+                return json_response(json.str());
+            }
+            
+            // 返回成功响应
+            std::ostringstream json;
+            json << "{";
+            json << "\"success\":true,";
+            json << "\"message\":\"Ollama部署任务已提交\",";
+            json << "\"task_id\":\"" << task_id << "\"";
+            json << "}";
+            
+            return json_response(json.str());
+            
+        } catch (const std::exception& e) {
+            std::ostringstream json;
+            json << "{\"success\":false,\"message\":\"创建Modelfile时出错: " << escape_json(e.what()) << "\"}";
+            return json_response(json.str());
+        }
+    }
+    else if (url.find("/api/ollama/status") == 0) {
+        // 获取任务ID
+        std::string task_id;
+        size_t query_start = url.find('?');
+        
+        if (query_start != std::string::npos) {
+            std::string query = url.substr(query_start + 1);
+            std::istringstream query_stream(query);
+            std::string param;
+            
+            while (std::getline(query_stream, param, '&')) {
+                size_t eq_pos = param.find('=');
+                if (eq_pos != std::string::npos) {
+                    std::string key = param.substr(0, eq_pos);
+                    std::string value = param.substr(eq_pos + 1);
+                    
+                    if (key == "task_id") {
+                        task_id = value;
+                        break;
+                    }
+                }
+            }
+        }
+        
+        if (task_id.empty()) {
+            std::ostringstream json;
+            json << "{\"success\":false,\"message\":\"缺少任务ID参数\"}";
+            return json_response(json.str());
+        }
+        
+        // 获取当前工作目录
+        std::string current_dir;
+#ifdef _WIN32
+        wchar_t wbuffer[MAX_PATH];
+        GetCurrentDirectoryW(MAX_PATH, wbuffer);
+        
+        // 将宽字符转换为UTF-8编码的字符串
+        int size_needed = WideCharToMultiByte(CP_UTF8, 0, wbuffer, -1, NULL, 0, NULL, NULL);
+        std::vector<char> utf8_buffer(size_needed);
+        WideCharToMultiByte(CP_UTF8, 0, wbuffer, -1, utf8_buffer.data(), size_needed, NULL, NULL);
+        
+        current_dir = std::string(utf8_buffer.data());
+#else
+        char buffer[PATH_MAX];
+        if (getcwd(buffer, PATH_MAX) != NULL) {
+            current_dir = buffer;
+        } else {
+            current_dir = ".";
+        }
+#endif
+        
+        // 构建状态文件路径
+        std::string status_file = current_dir + "/ollama_status_" + task_id + ".txt";
+        
+        // 检查状态文件是否存在
+        if (!file_exists(status_file)) {
+            std::ostringstream json;
+            json << "{\"success\":true,\"status\":\"running\",\"message\":\"任务正在进行中\"}";
+            return json_response(json.str());
+        }
+        
+        // 读取状态文件内容
+        std::string status_content;
+        try {
+            std::ifstream file(status_file);
+            if (file) {
+                std::stringstream buffer;
+                buffer << file.rdbuf();
+                status_content = buffer.str();
+                file.close();
+            }
+        } catch (const std::exception& e) {
+            std::ostringstream json;
+            json << "{\"success\":false,\"message\":\"读取状态文件出错: " << escape_json(e.what()) << "\"}";
+            return json_response(json.str());
+        }
+        
+        // 检查任务是否完成
+        if (status_content.find("SUCCESS") != std::string::npos) {
+            // 删除状态文件
+            std::remove(status_file.c_str());
+            
+            std::ostringstream json;
+            json << "{\"success\":true,\"status\":\"completed\",\"message\":\"模型部署成功\"}";
+            return json_response(json.str());
+        } else if (status_content.find("FAILED") != std::string::npos) {
+            // 删除状态文件
+            std::remove(status_file.c_str());
+            
+            std::ostringstream json;
+            json << "{\"success\":true,\"status\":\"failed\",\"message\":\"" << escape_json(status_content) << "\"}";
+            return json_response(json.str());
+        } else {
+            std::ostringstream json;
+            json << "{\"success\":true,\"status\":\"running\",\"message\":\"任务正在进行中\"}";
+            return json_response(json.str());
+        }
     }
     
     // 其他API返回404

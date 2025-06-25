@@ -22,6 +22,7 @@ import SideBar from './components/SideBar.vue'
 import TrainingView from './components/TrainingView.vue'
 import InferenceView from './components/InferenceView.vue'
 import ElianFactoryIntroView from './components/ElianFactoryIntroView.vue'
+import OllamaDeployView from './components/OllamaDeployView.vue'
 
 export default {
   name: 'App',
@@ -29,6 +30,7 @@ export default {
     SideBar,
     TrainingView,
     InferenceView,
+    OllamaDeployView,
     ElianFactoryIntroView
   },
   data() {
@@ -37,6 +39,7 @@ export default {
       pageComponents: {
         training: TrainingView,
         inference: InferenceView,
+        ollama: OllamaDeployView,
         intro: ElianFactoryIntroView,
       }
     }

@@ -42,6 +42,7 @@ export default {
       menuItems: {
         training: { title: '模型训练', icon: 'bi-cpu' },
         inference: { title: '模型推理', icon: 'bi-chat-dots' },
+        ollama: { title: '部署到Ollama', icon: 'bi-box-arrow-up' },
         intro: { title: '关于ElianFactory', icon: 'bi-info-circle' }
       }
     }

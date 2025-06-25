@@ -41,8 +41,7 @@ def model_reasoning(model_path: str, prompt: str, max_new_tokens=2048):
 
 if __name__ == '__main__':
     model_path = "./output/shuangseqiu/combin/qwen/checkpoint-200"
-    # model_path = "./output/shuangseqiu/combin"
-    prompt = '请预测2023-01-15的双色球。其中： [ { "time": "2022-12-22", "red": [ "02", "03", "07", "13", "20", "30" ], "blue": "10" }, { "time": "2022-12-25", "red": [ "02", "15", "16", "17", "21", "31" ], "blue": "14" }, { "time": "2022-12-27", "red": [ "02", "22", "26", "29", "32", "33" ], "blue": "14" }, { "time": "2022-12-29", "red": [ "01", "07", "11", "12", "22", "28" ], "blue": "05" }, { "time": "2023-01-01", "red": [ "09", "16", "18", "22", "28", "32" ], "blue": "02" }, { "time": "2023-01-03", "red": [ "02", "06", "10", "16", "18", "22" ], "blue": "13" }, { "time": "2023-01-05", "red": [ "05", "08", "18", "25", "30", "32" ], "blue": "06" }, { "time": "2023-01-08", "red": [ "01", "07", "15", "16", "20", "25" ], "blue": "16" }, { "time": "2023-01-10", "red": [ "02", "06", "08", "13", "14", "19" ], "blue": "16" }, { "time": "2023-01-12", "red": [ "02", "10", "12", "14", "24", "26" ], "blue": "05" } ]'
+    prompt = "xxx"
     max_new_tokens = 4096
     response = model_reasoning(model_path, prompt,max_new_tokens)
     print(response)

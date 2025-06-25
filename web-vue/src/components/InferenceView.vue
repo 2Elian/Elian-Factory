@@ -149,29 +149,7 @@ export default {
       this.inferenceError = null
       this.inferenceResult = null
       
-      // 模拟API调用，实际项目中应该连接到后端API
-      setTimeout(() => {
-        try {
-          // 这里仅作为演示
-          if (Math.random() < 0.9) {
-            const demoResponses = [
-              "根据历史数据分析，我预测2023-01-15的双色球红球号码为：[04, 10, 16, 20, 26, 31]，蓝球号码为：14。\n\n请注意，彩票有风险，投资需谨慎，此预测仅供参考。",
-              "我已经对您的问题进行了分析。基于训练数据，我认为最优的解决方案是采用分布式架构，结合微服务和容器化技术，这样可以更好地满足您的需求。详细实施方案如下...",
-              "从提供的情感分析任务来看，您的数据集存在一定的不平衡问题。我建议您可以尝试以下几种方法改进模型性能：\n1. 使用过采样或欠采样技术平衡数据集\n2. 采用focal loss代替交叉熵损失函数\n3. 使用预训练模型进行微调，如BERT或RoBERTa"
-            ];
-            this.inferenceResult = demoResponses[Math.floor(Math.random() * demoResponses.length)];
-          } else {
-            throw new Error('模型推理失败，请检查模型路径是否正确');
-          }
-          this.inferencing = false;
-        } catch (error) {
-          this.inferenceError = error.message;
-          this.inferencing = false;
-        }
-      }, 2000);
-      
-      // 实际API调用应该类似：
-      /*
+      // 调用后端API
       fetch('/api/inference', {
         method: 'POST',
         headers: {
@@ -186,14 +164,57 @@ export default {
         return response.json();
       })
       .then(data => {
-        this.inferenceResult = data.result;
-        this.inferencing = false;
+        if (!data.success) {
+          throw new Error(data.message || '推理请求失败');
+        }
+        
+        // 开始轮询结果
+        this.pollInferenceResult(data.output_file);
       })
       .catch(error => {
         this.inferenceError = `推理失败: ${error.message}`;
         this.inferencing = false;
       });
-      */
+    },
+    
+    // 轮询推理结果
+    pollInferenceResult(outputFile) {
+      const encodedFile = encodeURIComponent(outputFile);
+      const pollInterval = setInterval(() => {
+        fetch(`/api/inference/result?file=${encodedFile}`)
+          .then(response => {
+            if (!response.ok) {
+              throw new Error('获取推理结果失败');
+            }
+            return response.json();
+          })
+          .then(data => {
+            if (data.success) {
+              // 清除轮询
+              clearInterval(pollInterval);
+              
+              // 显示结果
+              this.inferenceResult = data.result;
+              this.inferencing = false;
+            }
+          })
+          .catch(error => {
+            // 清除轮询
+            clearInterval(pollInterval);
+            
+            this.inferenceError = `获取推理结果失败: ${error.message}`;
+            this.inferencing = false;
+          });
+      }, 3000); // 每3秒轮询一次
+      
+      // 设置超时，避免无限轮询
+      setTimeout(() => {
+        if (this.inferencing) {
+          clearInterval(pollInterval);
+          this.inferenceError = '推理超时，请检查模型路径是否正确或尝试简化输入内容';
+          this.inferencing = false;
+        }
+      }, 300000); // 5分钟超时
     }
   }
 }
