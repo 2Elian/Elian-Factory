@@ -11,7 +11,7 @@
 
 - 🖥️ **基于Windows系统开发**：ElianFactory完全支持原生态Windows系统，无需部署Linux虚拟机即可进行大语言模型的微调和推理。
 - 🚀 **直观的操作页面**：ElianFactory是一个无需构建任何代码的工具，您只需进行简单的配置即可进行LLM的微调与推理。
-- 🔍 **训练支持**：在ElianFactory-V1.0.0中，我们只支持SFT训练。在后续的版本中，我们会将DPO、PPO、GRPO等功能集成到ElianFactory中，并会考虑更高效的微调推理框架。
+- 🔍 **训练支持**：在ElianFactory-V1.x中，我们只支持SFT训练。在后续的V2.x版本中，我们会将DPO、PPO、GRPO等功能集成到ElianFactory中，并会在V3.x中考虑更高效的微调推理框架。
 
 ## 演示视频
 
